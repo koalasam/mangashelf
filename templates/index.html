@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% block title %}Home — MangaShelf{% endblock %}
+{% block content %}
+<style>
+  .hero-band {
+    background: linear-gradient(135deg, var(--surface) 0%, var(--bg) 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 2.5rem 2rem 2rem;
+    max-width: 100%;
+  }
+  .hero-inner { max-width: 1400px; margin: 0 auto; }
+  .hero-greeting {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.6rem;
+    letter-spacing: 0.05em;
+    line-height: 1;
+  }
+  .hero-greeting span { color: var(--accent); }
+  .hero-sub { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.3rem; }
+
+  .continue-scroll {
+    display: flex;
+    gap: 1.1rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .continue-card {
+    min-width: 200px;
+    max-width: 200px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.75rem;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.2s;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+  .continue-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .continue-card img {
+    width: 48px;
+    height: 68px;
+    object-fit: cover;
+    border-radius: 5px;
+    flex-shrink: 0;
+  }
+  .continue-card .c-placeholder {
+    width: 48px; height: 68px;
+    background: var(--surface2);
+    border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; flex-shrink: 0;
+  }
+  .continue-info { overflow: hidden; }
+  .continue-title { font-size: 0.82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .continue-ch { font-size: 0.73rem; color: var(--text-muted); margin-top: 0.2rem; }
+  .continue-resume {
+    display: inline-block;
+    margin-top: 0.4rem;
+    font-size: 0.7rem;
+    font-family: 'Space Mono', monospace;
+    color: var(--accent);
+  }
+  .empty-state {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    padding: 1.5rem 0;
+    font-style: italic;
+  }
+</style>
+<div class="hero-band">
+  <div class="hero-inner">
+    <div class="hero-greeting">Welcome back, <span>{{ username }}</span></div>
+    <div class="hero-sub">Pick up where you left off or discover something new.</div>
+  </div>
+</div>
+<div class="page">
+  {% if continue_reading %}
+  <section style="margin-bottom: 2.5rem;">
+    <div class="section-title">Continue Reading</div>
+    <div class="continue-scroll">
+      {% for s in continue_reading %}
+      <a class="continue-card" href="{{ url_for('reader', series_id=s.id, chapter_id=s.last_chapter) if s.last_chapter else url_for('series', series_id=s.id) }}">
+        {% if s.cover %}
+        <img src="{{ url_for('static', filename='covers/' + s.id + '.jpg') }}" alt="{{ s.title }}">
+        {% else %}
+        <div class="c-placeholder">📖</div>
+        {% endif %}
+        <div class="continue-info">
+          <div class="continue-title">{{ s.title }}</div>
+          {% if s.last_chapter %}
+          <div class="continue-ch">{{ s.last_chapter }}, p{{ s.last_page or 1 }}</div>
+          {% endif %}
+          <span class="continue-resume">▶ Resume</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section>
+    <div class="section-title">
+      Featured
+      <a href="{{ url_for('library') }}" style="font-family:'Noto Sans JP',sans-serif;font-size:0.82rem;font-weight:400;color:var(--text-muted);letter-spacing:0.02em;margin-left:auto;">View All →</a>
+    </div>
+    {% if highlighted %}
+    <div class="grid-covers">
+      {% for s in highlighted %}
+      <a class="cover-card" href="{{ url_for('series', series_id=s.id) }}">
+        {% if s.cover %}
+        <img src="{{ url_for('static', filename='covers/' + s.id + '.jpg') }}" alt="{{ s.title }}">
+        {% else %}
+        <div class="cover-placeholder">📖</div>
+        {% endif %}
+        <div class="card-label">{{ s.title }}</div>
+        <div class="card-meta">{{ s.chapter_count }} chapter{% if s.chapter_count != 1 %}s{% endif %}</div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      Your library is empty. Go to <a href="{{ url_for('admin') }}" style="color:var(--accent);">Admin</a> to scan for manga.
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

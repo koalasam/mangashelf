@@ -1,0 +1,1 @@
+**I and any people behind this project it take no responsibility for what others do with the provided aplication, it was created for education and learning purposes only and is not intended to be deployed publicly**

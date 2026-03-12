@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Library — MangaShelf{% endblock %}
+{% block content %}
+<style>
+  .lib-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .lib-count {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-left: auto;
+  }
+  #search-input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 0.5rem 1rem;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    width: 260px;
+    transition: border-color 0.2s;
+  }
+  #search-input:focus { border-color: var(--accent); }
+  .no-results { color: var(--text-muted); font-style: italic; padding: 3rem 0; text-align: center; }
+</style>
+<div class="page">
+  <div class="lib-header">
+    <div class="section-title" style="margin-bottom:0;flex:1;">Library</div>
+    <input type="text" id="search-input" placeholder="Search series…">
+    <span class="lib-count" id="count-label">{{ series_list|length }} series</span>
+  </div>
+
+  {% if series_list %}
+  <div class="grid-covers" id="grid">
+    {% for s in series_list %}
+    <a class="cover-card" href="{{ url_for('series', series_id=s.id) }}" data-title="{{ s.title|lower }}">
+      {% if s.cover %}
+      <img src="{{ url_for('static', filename='covers/' + s.id + '.jpg') }}" alt="{{ s.title }}" loading="lazy">
+      {% else %}
+      <div class="cover-placeholder">📖</div>
+      {% endif %}
+      <div class="card-label">{{ s.title }}</div>
+      <div class="card-meta">{{ s.chapter_count }} chapter{% if s.chapter_count != 1 %}s{% endif %}</div>
+    </a>
+    {% endfor %}
+  </div>
+  <div class="no-results" id="no-results" style="display:none;">No series match your search.</div>
+  {% else %}
+  <div class="no-results">Your library is empty. <a href="{{ url_for('admin') }}" style="color:var(--accent);">Scan for manga</a> in the Admin panel.</div>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const input = document.getElementById('search-input');
+const cards = document.querySelectorAll('.cover-card[data-title]');
+const noResults = document.getElementById('no-results');
+const countLabel = document.getElementById('count-label');
+input.addEventListener('input', () => {
+  const q = input.value.toLowerCase();
+  let visible = 0;
+  cards.forEach(c => {
+    const match = c.dataset.title.includes(q);
+    c.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  noResults.style.display = visible === 0 ? 'block' : 'none';
+  countLabel.textContent = visible + ' series';
+});
+</script>
+{% endblock %}

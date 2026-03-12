@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% block title %}{{ series.title }} — MangaShelf{% endblock %}
+{% block content %}
+<style>
+  .series-hero {
+    background: linear-gradient(to bottom, var(--surface) 0%, var(--bg) 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 2.5rem 2rem;
+  }
+  .series-hero-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+  }
+  .series-cover-wrap {
+    flex-shrink: 0;
+    width: 160px;
+  }
+  .series-cover-wrap img, .series-cover-placeholder {
+    width: 160px;
+    height: 240px;
+    object-fit: cover;
+    border-radius: 10px;
+    box-shadow: var(--card-shadow);
+  }
+  .series-cover-placeholder {
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+  }
+  .series-info { flex: 1; }
+  .series-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.4rem;
+    letter-spacing: 0.05em;
+    line-height: 1.1;
+  }
+  .series-stats {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 0.9rem;
+    flex-wrap: wrap;
+  }
+  .stat-item {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+  .stat-item strong { color: var(--text); font-size: 1.1rem; display: block; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.04em; }
+  .series-actions { margin-top: 1.4rem; display: flex; gap: 0.7rem; flex-wrap: wrap; }
+
+  .chapter-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+  .order-btn {
+    padding: 0.35rem 0.9rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.18s;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  .order-btn.active {
+    background: var(--surface2);
+    color: var(--text);
+    border-color: var(--accent);
+  }
+  .chapter-list { display: flex; flex-direction: column; gap: 0.5rem; }
+  .chapter-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.18s, background 0.18s;
+    text-decoration: none;
+    gap: 1rem;
+  }
+  .chapter-item:hover { border-color: var(--accent); background: var(--surface2); }
+  .chapter-item.reading { border-left: 3px solid var(--accent); }
+  .ch-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.05rem;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    min-width: 80px;
+  }
+  .ch-title { font-size: 0.88rem; flex: 1; }
+  .ch-meta { font-size: 0.75rem; color: var(--text-muted); font-family: 'Space Mono', monospace; }
+  .ch-read-badge {
+    font-size: 0.7rem;
+    color: var(--success);
+    font-family: 'Space Mono', monospace;
+  }
+</style>
+<div class="series-hero">
+  <div class="series-hero-inner">
+    <div class="series-cover-wrap">
+      {% if series.cover %}
+      <img src="{{ url_for('static', filename='covers/' + series.id + '.jpg') }}" alt="{{ series.title }}">
+      {% else %}
+      <div class="series-cover-placeholder">📖</div>
+      {% endif %}
+    </div>
+    <div class="series-info">
+      <div class="series-title">{{ series.title }}</div>
+      <div class="series-stats">
+        <div class="stat-item"><strong>{{ series.chapter_count }}</strong>Chapters</div>
+        <div class="stat-item"><strong>{{ series.chapters|sum(attribute='page_count') }}</strong>Pages</div>
+      </div>
+      <div class="series-actions">
+        {% if series.chapters %}
+        {% set first_ch = series.chapters[0] %}
+        {% if progress.chapter %}
+        <a href="{{ url_for('reader', series_id=series.id, chapter_id=progress.chapter, page=progress.page or 1) }}" class="btn btn-primary">▶ Continue Reading</a>
+        {% else %}
+        <a href="{{ url_for('reader', series_id=series.id, chapter_id=first_ch.id) }}" class="btn btn-primary">▶ Start Reading</a>
+        {% endif %}
+        {% endif %}
+        <a href="{{ url_for('library') }}" class="btn btn-ghost">← Library</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="chapter-controls">
+    <span style="color:var(--text-muted);font-size:0.85rem;">Sort:</span>
+    <a href="?order=asc" class="order-btn {% if order == 'asc' %}active{% endif %}">Oldest First</a>
+    <a href="?order=desc" class="order-btn {% if order == 'desc' %}active{% endif %}">Newest First</a>
+  </div>
+  <div class="chapter-list">
+    {% for ch in chapters %}
+    <a class="chapter-item {% if progress.chapter == ch.id %}reading{% endif %}" 
+       href="{{ url_for('reader', series_id=series.id, chapter_id=ch.id) }}">
+      <div class="ch-num">{{ ch.id }}</div>
+      <div class="ch-title">{{ ch.title }}</div>
+      <div class="ch-meta">{{ ch.page_count }} pages</div>
+      {% if progress.chapter == ch.id %}
+      <div class="ch-read-badge">● Reading</div>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

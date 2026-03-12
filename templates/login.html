@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block title %}Login — MangaShelf{% endblock %}
+{% block content %}
+<style>
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .login-wrap {
+    width: 100%;
+    max-width: 380px;
+    padding: 1rem;
+  }
+  .login-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3rem;
+    color: var(--accent);
+    text-align: center;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.3rem;
+  }
+  .login-sub {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-bottom: 2.5rem;
+    letter-spacing: 0.05em;
+  }
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: var(--card-shadow);
+  }
+  .form-group { margin-bottom: 1.2rem; }
+  label {
+    display: block;
+    font-size: 0.78rem;
+    font-family: 'Space Mono', monospace;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  input[type=text], input[type=password] {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 0.65rem 0.9rem;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus { border-color: var(--accent); }
+  .error-msg {
+    background: rgba(233,69,96,0.1);
+    border: 1px solid rgba(233,69,96,0.3);
+    color: var(--accent);
+    border-radius: 7px;
+    padding: 0.65rem 0.9rem;
+    font-size: 0.85rem;
+    margin-bottom: 1.2rem;
+  }
+  .btn-login {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+    letter-spacing: 0.05em;
+  }
+</style>
+<div class="login-wrap">
+  <div class="login-logo">📖 MangaShelf</div>
+  <div class="login-sub">Your personal manga library</div>
+  <div class="login-card">
+    {% if error %}<div class="error-msg">{{ error }}</div>{% endif %}
+    <form method="POST">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" name="username" autocomplete="username" required>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" name="password" autocomplete="current-password" required>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1.2rem;">
+        <input type="checkbox" name="remember" id="remember" style="width:auto;accent-color:var(--accent);cursor:pointer;">
+        <label for="remember" style="font-size:0.82rem;color:var(--text-muted);text-transform:none;letter-spacing:0;cursor:pointer;margin:0;">Remember me for 30 days</label>
+      </div>
+      <button type="submit" class="btn btn-primary btn-login">Sign In</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,581 @@
+{% extends 'base.html' %}
+{% block title %}Admin — MangaShelf{% endblock %}
+{% block content %}
+<style>
+  .admin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+  .admin-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+  .admin-card h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .form-row { margin-bottom: 1rem; }
+  label {
+    display: block;
+    font-size: 0.75rem;
+    font-family: 'Space Mono', monospace;
+    color: var(--text-muted);
+    margin-bottom: 0.35rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  input[type=text], input[type=password], select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 0.55rem 0.85rem;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  select { appearance: none; cursor: pointer; }
+  .user-list { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1rem; }
+  .user-item {
+    display: flex;
+    align-items: center;
+    padding: 0.6rem 0.8rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    gap: 0.8rem;
+  }
+  .user-name { font-family: 'Space Mono', monospace; font-size: 0.85rem; flex: 1; }
+  .user-role { font-size: 0.72rem; color: var(--text-muted); }
+  .scan-result {
+    margin-top: 1rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 1rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    display: none;
+    white-space: pre-wrap;
+  }
+  .pairs-list { max-height: 300px; overflow-y: auto; }
+  .pair-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+  .pair-item:last-child { border-bottom: none; }
+  .side-toggle {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    overflow: hidden;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+  }
+  .side-btn {
+    padding: 0.4rem 0.9rem;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    font-family: inherit;
+    font-size: inherit;
+  }
+  .side-btn:not(:last-child) { border-right: 1px solid var(--border); }
+  .side-btn.active { background: var(--accent); color: #fff; }
+  .side-btn:not(.active):hover { background: var(--surface2); color: var(--text); }
+  .series-selector, .chapter-selector {
+    margin-bottom: 0.8rem;
+  }
+  #pairs-display { margin-top: 0.8rem; }
+  .hr { height: 1px; background: var(--border); margin: 1rem 0; }
+  .monitor-list { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1rem; }
+  .monitor-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+  }
+  .monitor-item.disabled { opacity: 0.5; }
+  .monitor-title { font-size: 0.88rem; font-weight: 600; flex: 1; min-width: 120px; }
+  .monitor-meta { font-family: 'Space Mono', monospace; font-size: 0.7rem; color: var(--text-muted); }
+  .monitor-scraper { font-family: 'Space Mono', monospace; font-size: 0.7rem; color: var(--accent); }
+  .monitor-status {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.68rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+  .monitor-status.running { border-color: var(--accent2); color: var(--accent2); }
+  .monitor-status.done { border-color: var(--success); color: var(--success); }
+  .monitor-status.error { border-color: var(--accent); color: var(--accent); }
+  .run-log {
+    margin-top: 1rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 1rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    white-space: pre-wrap;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+  }
+</style>
+<div class="page">
+  <div class="section-title">Admin Panel</div>
+
+  <div class="admin-grid">
+
+    <!-- Scan -->
+    <div class="admin-card">
+      <h2>📁 Library Scan</h2>
+      <div class="form-row">
+        <label>Manga Directory</label>
+        <input type="text" id="manga-dir" value="{{ settings.get('manga_dir', 'manga') }}" placeholder="manga">
+      </div>
+      <button class="btn btn-primary" onclick="saveSettings()">Save Path</button>
+      &nbsp;
+      <button class="btn btn-ghost" onclick="runScan()" id="scan-btn">Scan Now</button>
+      <div class="scan-result" id="scan-result"></div>
+      <div class="hr"></div>
+      <div style="font-size:0.82rem;color:var(--text-muted);">
+        Library contains <strong style="color:var(--text);">{{ library|length }}</strong> series.
+        Each series should be a folder inside the manga directory. Chapters should be subfolders.
+      </div>
+    </div>
+
+    <!-- Users -->
+    <div class="admin-card">
+      <h2>👥 Users</h2>
+      <div class="user-list" id="user-list">
+        {% for uname, udata in users.items() %}
+        <div class="user-item" id="user-{{ uname }}">
+          <span class="user-name">{{ uname }}</span>
+          <span class="badge {% if udata.role == 'admin' %}badge-accent{% else %}badge-muted{% endif %}">{{ udata.role }}</span>
+          <button class="btn btn-ghost btn-sm" onclick="changePass('{{ uname }}')">🔑</button>
+          {% if uname != session.username %}
+          <button class="btn btn-ghost btn-sm" onclick="deleteUser('{{ uname }}')" style="color:var(--accent)">✕</button>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      <div class="hr"></div>
+      <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:0.8rem;">Add User</h3>
+      <div class="form-row">
+        <label>Username</label>
+        <input type="text" id="new-username" placeholder="username">
+      </div>
+      <div class="form-row">
+        <label>Password</label>
+        <input type="password" id="new-password" placeholder="password">
+      </div>
+      <div class="form-row">
+        <label>Role</label>
+        <select id="new-role">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="addUser()">Add User</button>
+    </div>
+
+
+    <!-- Scrapers & Monitoring -->
+    <div class="admin-card" style="grid-column: 1 / -1;">
+      <h2>🔍 Scrapers &amp; Series Monitoring</h2>
+      <p style="font-size:0.83rem;color:var(--text-muted);margin-bottom:1rem;">
+        Monitor series URLs and automatically download new chapters at midnight and noon.
+        Scrapers live in the <code style="background:var(--surface2);padding:0.1rem 0.4rem;border-radius:4px;">scraper/</code> folder —
+        add new ones and register them in <code style="background:var(--surface2);padding:0.1rem 0.4rem;border-radius:4px;">scraper/__init__.py</code>.
+      </p>
+
+      <!-- Add series form -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:1rem;">
+        <div>
+          <label>Series URL</label>
+          <input type="text" id="monitor-url" placeholder="https://weebcentral.com/series/…/Series-Name">
+        </div>
+        <div>
+          <label>Title (optional)</label>
+          <input type="text" id="monitor-title" placeholder="My Series Name">
+        </div>
+        <div>
+          <label>Scraper</label>
+          <select id="monitor-scraper">
+            {% for key, name in scrapers %}
+            <option value="{{ key }}">{{ name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Link to Library Series (optional)</label>
+          <select id="monitor-series-id">
+            <option value="">— auto-detect after scan —</option>
+            {% for sid, s in library.items() %}
+            <option value="{{ sid }}">{{ s.title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.7rem;flex-wrap:wrap;margin-bottom:1.2rem;">
+        <button class="btn btn-primary" onclick="addMonitor()">+ Add Series</button>
+        <button class="btn btn-ghost" id="run-all-btn" onclick="runAllMonitors()">▶ Update All Now</button>
+      </div>
+
+      <!-- Monitored series list -->
+      <div class="monitor-list" id="monitor-list">
+        {% if monitored %}
+          {% for key, entry in monitored.items() %}
+          <div class="monitor-item {% if not entry.get('enabled', true) %}disabled{% endif %}" id="monitor-{{ loop.index }}">
+            <div>
+              <div class="monitor-title">{{ entry.title }}</div>
+              <div class="monitor-scraper">{{ entry.scraper }}</div>
+            </div>
+            <div style="flex:1;min-width:0;overflow:hidden;">
+              <div class="monitor-meta" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ entry.url }}</div>
+              <div class="monitor-meta">Last checked: {{ entry.last_checked or 'never' }}</div>
+            </div>
+            <span class="monitor-status" id="status-{{ loop.index }}">
+              {% if entry.get('enabled', true) %}enabled{% else %}paused{% endif %}
+            </span>
+            <button class="btn btn-ghost btn-sm" onclick="runMonitor('{{ key }}', {{ loop.index }})">▶ Update</button>
+            <button class="btn btn-ghost btn-sm" onclick="toggleMonitor('{{ key }}', {{ loop.index }})">
+              {% if entry.get('enabled', true) %}⏸{% else %}▶{% endif %}
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="removeMonitor('{{ key }}', {{ loop.index }})" style="color:var(--accent)">✕</button>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div style="color:var(--text-muted);font-size:0.85rem;font-style:italic;">No series being monitored yet.</div>
+        {% endif %}
+      </div>
+
+      <div class="run-log" id="run-log"></div>
+    </div>
+
+    <!-- Page Pairs -->
+    <div class="admin-card" style="grid-column: 1 / -1;">
+      <h2>📄 Page Pairs</h2>
+      <p style="font-size:0.83rem;color:var(--text-muted);margin-bottom:1rem;">
+        Page pairs are computed automatically during scan. Each pair is [left, right] (later page, earlier page).
+        A single-element pair is a double-page spread. You can rescan pairs for a specific chapter here.
+      </p>
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;">
+        <div style="flex:1;min-width:200px;">
+          <label>Series</label>
+          <select id="pairs-series" onchange="loadChapters()">
+            <option value="">— Select series —</option>
+            {% for sid, s in library.items() %}
+            <option value="{{ sid }}">{{ s.title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div style="flex:1;min-width:200px;">
+          <label>Chapter</label>
+          <select id="pairs-chapter">
+            <option value="">— Select chapter —</option>
+          </select>
+        </div>
+        <button class="btn btn-ghost" onclick="loadPairs()">Load Pairs</button>
+        <button class="btn btn-primary" onclick="rescanPairs()">Re-scan Pairs</button>
+      </div>
+      <div id="pairs-display"></div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const library = {{ library|tojson }};
+
+async function saveSettings() {
+  const dir = document.getElementById('manga-dir').value;
+  const r = await fetch('/api/settings', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({manga_dir: dir})
+  });
+  const d = await r.json();
+  showToast(d.ok ? 'Settings saved!' : 'Error: ' + d.error, d.ok ? '#4ade80' : '#e94560');
+}
+
+async function runScan() {
+  const btn = document.getElementById('scan-btn');
+  btn.textContent = 'Scanning…';
+  btn.disabled = true;
+  const res = document.getElementById('scan-result');
+  res.style.display = 'block';
+  res.textContent = 'Scanning…';
+  try {
+    const r = await fetch('/api/scan', {method:'POST'});
+    const d = await r.json();
+    if (d.error) { res.textContent = 'Error: ' + d.error; }
+    else {
+      res.textContent = `Added: ${d.added.join(', ') || 'none'}\nUpdated: ${d.updated.join(', ') || 'none'}\nErrors: ${d.errors.join(', ') || 'none'}`;
+      showToast(`Scan done! ${d.added.length} added, ${d.updated.length} updated.`, '#4ade80');
+      setTimeout(() => location.reload(), 2000);
+    }
+  } catch(e) {
+    res.textContent = 'Error: ' + e.message;
+  }
+  btn.textContent = 'Scan Now';
+  btn.disabled = false;
+}
+
+async function addUser() {
+  const username = document.getElementById('new-username').value.trim();
+  const password = document.getElementById('new-password').value;
+  const role = document.getElementById('new-role').value;
+  if (!username || !password) { showToast('Username and password required', '#e94560'); return; }
+  const r = await fetch('/api/users', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({action:'add', username, password, role})
+  });
+  const d = await r.json();
+  if (d.ok) { showToast('User added!', '#4ade80'); setTimeout(() => location.reload(), 1500); }
+  else { showToast('Error: ' + d.error, '#e94560'); }
+}
+
+async function deleteUser(username) {
+  if (!confirm(`Delete user "${username}"?`)) return;
+  const r = await fetch('/api/users', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({action:'delete', username})
+  });
+  const d = await r.json();
+  if (d.ok) {
+    document.getElementById('user-' + username)?.remove();
+    showToast('User deleted', '#4ade80');
+  } else { showToast('Error: ' + d.error, '#e94560'); }
+}
+
+async function changePass(username) {
+  const pw = prompt(`New password for "${username}":`);
+  if (!pw) return;
+  const r = await fetch('/api/users', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({action:'change_password', username, password: pw})
+  });
+  const d = await r.json();
+  showToast(d.ok ? 'Password changed!' : 'Error: ' + d.error, d.ok ? '#4ade80' : '#e94560');
+}
+
+function loadChapters() {
+  const sid = document.getElementById('pairs-series').value;
+  const sel = document.getElementById('pairs-chapter');
+  sel.innerHTML = '<option value="">— Select chapter —</option>';
+  if (!sid || !library[sid]) return;
+  library[sid].chapters.forEach(ch => {
+    const opt = document.createElement('option');
+    opt.value = ch.id;
+    opt.textContent = ch.title;
+    sel.appendChild(opt);
+  });
+  document.getElementById('pairs-display').innerHTML = '';
+}
+
+function renderPairsDisplay(chapter, pairs) {
+  // Determine current side setting
+  const fpr = chapter.first_page_right;
+  const currentSide = fpr === true ? 'right' : fpr === false ? 'left' : 'auto';
+
+  const display = document.getElementById('pairs-display');
+  let html = `<div class="hr"></div>`;
+
+  // First page side control
+  html += `
+  <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;">
+    <div>
+      <div style="font-family:'Space Mono',monospace;font-size:0.72rem;color:var(--text-muted);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.05em;">First Page Side</div>
+      <div class="side-toggle">
+        <button class="side-btn ${currentSide === 'left' ? 'active' : ''}" onclick="setFirstPageSide('left')">Left</button>
+        <button class="side-btn ${currentSide === 'auto' ? 'active' : ''}" onclick="setFirstPageSide('auto')">Auto</button>
+        <button class="side-btn ${currentSide === 'right' ? 'active' : ''}" onclick="setFirstPageSide('right')">Right</button>
+      </div>
+    </div>
+    <div style="font-family:'Space Mono',monospace;font-size:0.75rem;color:var(--text-muted);align-self:flex-end;padding-bottom:0.1rem;">
+      ${pairs.length} pairs from ${chapter.page_count} pages
+    </div>
+  </div>`;
+
+  html += '<div class="pairs-list">';
+  pairs.forEach((pair, i) => {
+    const isDouble = pair.length === 1;
+    html += `<div class="pair-item">
+      <span style="color:var(--accent);min-width:30px;">#${i+1}</span>
+      <span>${isDouble ? `[${pair[0]}] 🖼 Double spread` : `[${pair[0]}, ${pair[1]}] — Left: p${pair[0]}, Right: p${pair[1]}`}</span>
+    </div>`;
+  });
+  html += '</div>';
+  display.innerHTML = html;
+}
+
+function loadPairs() {
+  const sid = document.getElementById('pairs-series').value;
+  const chid = document.getElementById('pairs-chapter').value;
+  if (!sid || !chid) return;
+  const series = library[sid];
+  const chapter = series.chapters.find(c => c.id === chid);
+  if (!chapter) return;
+  renderPairsDisplay(chapter, chapter.pairs);
+}
+
+async function setFirstPageSide(side) {
+  const sid = document.getElementById('pairs-series').value;
+  const chid = document.getElementById('pairs-chapter').value;
+  if (!sid || !chid) return;
+
+  const r = await fetch(`/api/set_first_page_side/${encodeURIComponent(sid)}/${encodeURIComponent(chid)}`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({side})
+  });
+  const d = await r.json();
+  if (d.ok) {
+    // Update local library data so re-renders are accurate
+    const chapter = library[sid].chapters.find(c => c.id === chid);
+    chapter.pairs = d.pairs;
+    chapter.first_page_right = d.first_page_right;
+    renderPairsDisplay(chapter, d.pairs);
+    showToast(`First page set to ${side} — pairs updated!`, '#4ade80');
+  } else {
+    showToast('Error: ' + d.error, '#e94560');
+  }
+}
+
+async function rescanPairs() {
+  const sid = document.getElementById('pairs-series').value;
+  const chid = document.getElementById('pairs-chapter').value;
+  if (!sid || !chid) { showToast('Select a series and chapter first', '#e94560'); return; }
+  const r = await fetch(`/api/rescan_pairs/${encodeURIComponent(sid)}/${encodeURIComponent(chid)}`, {method:'POST'});
+  const d = await r.json();
+  if (d.ok) {
+    showToast('Pairs rescanned!', '#4ade80');
+    setTimeout(() => location.reload(), 1500);
+  } else {
+    showToast('Error: ' + d.error, '#e94560');
+  }
+}
+
+// ── Monitor functions ──────────────────────────────────────────────────────────
+
+function setStatus(idx, text, cls) {
+  const el = document.getElementById('status-' + idx);
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'monitor-status' + (cls ? ' ' + cls : '');
+}
+
+function appendLog(msg) {
+  const log = document.getElementById('run-log');
+  log.style.display = 'block';
+  log.textContent += msg + '\n';
+  log.scrollTop = log.scrollHeight;
+}
+
+async function addMonitor() {
+  const url = document.getElementById('monitor-url').value.trim();
+  const title = document.getElementById('monitor-title').value.trim();
+  const scraper = document.getElementById('monitor-scraper').value;
+  const series_id = document.getElementById('monitor-series-id').value;
+  if (!url) { showToast('URL is required', '#e94560'); return; }
+  const r = await fetch('/api/monitor/add', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({url, title: title || url, scraper, series_id: series_id || null})
+  });
+  const d = await r.json();
+  if (d.ok) {
+    showToast('Series added to monitoring!', '#4ade80');
+    setTimeout(() => location.reload(), 1200);
+  } else {
+    showToast('Error: ' + d.error, '#e94560');
+  }
+}
+
+async function removeMonitor(key, idx) {
+  if (!confirm('Remove this series from monitoring?')) return;
+  const r = await fetch(`/api/monitor/remove/${encodeURIComponent(key)}`, {method:'POST'});
+  const d = await r.json();
+  if (d.ok) {
+    document.getElementById('monitor-' + idx)?.remove();
+    showToast('Removed from monitoring', '#4ade80');
+  }
+}
+
+async function toggleMonitor(key, idx) {
+  const r = await fetch(`/api/monitor/toggle/${encodeURIComponent(key)}`, {method:'POST'});
+  const d = await r.json();
+  if (d.ok) {
+    const item = document.getElementById('monitor-' + idx);
+    if (item) item.classList.toggle('disabled', !d.enabled);
+    setStatus(idx, d.enabled ? 'enabled' : 'paused');
+    showToast(d.enabled ? 'Monitoring enabled' : 'Monitoring paused', '#4ade80');
+  }
+}
+
+async function runMonitor(key, idx) {
+  setStatus(idx, 'running…', 'running');
+  appendLog(`[${new Date().toLocaleTimeString()}] Starting update for entry ${idx}…`);
+  const r = await fetch(`/api/monitor/run/${encodeURIComponent(key)}`, {method:'POST'});
+  const d = await r.json();
+  if (d.ok) {
+    setStatus(idx, 'done ✓', 'done');
+    appendLog(`[${new Date().toLocaleTimeString()}] ✓ ${d.message}`);
+    showToast('Update complete!', '#4ade80');
+  } else {
+    setStatus(idx, 'error', 'error');
+    appendLog(`[${new Date().toLocaleTimeString()}] ✗ ${d.message}`);
+    showToast('Error: ' + d.message, '#e94560');
+  }
+}
+
+async function runAllMonitors() {
+  const btn = document.getElementById('run-all-btn');
+  btn.disabled = true;
+  btn.textContent = 'Running…';
+  appendLog(`[${new Date().toLocaleTimeString()}] Starting update for all monitored series…`);
+  const r = await fetch('/api/monitor/run_all', {method:'POST'});
+  const d = await r.json();
+  Object.entries(d.results).forEach(([key, res]) => {
+    const msg = `${res.title}: ${res.message}`;
+    appendLog(`  ${res.ok ? '✓' : res.ok === null ? '—' : '✗'} ${msg}`);
+  });
+  appendLog(`[${new Date().toLocaleTimeString()}] Done.`);
+  btn.disabled = false;
+  btn.textContent = '▶ Update All Now';
+  showToast('All updates complete', '#4ade80');
+}
+</script>
+{% endblock %}
