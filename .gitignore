@@ -209,6 +209,7 @@ __marimo__/
 # Project Specific
 /data
 /manga
-/scraper
+/scraper/
 *.env
 *.png
+/static/covers/
